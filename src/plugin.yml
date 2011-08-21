@@ -1,0 +1,7 @@
+name: Circles
+main: net.shadowjay1.bukkit.circles.Circles
+version: 0.1
+author: shadowjay1
+commands:
+    circle:
+         description: Circle commands.
