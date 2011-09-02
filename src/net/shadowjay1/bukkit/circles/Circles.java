@@ -25,6 +25,7 @@ public class Circles extends JavaPlugin
 		BListener bl = new BListener();
 
 		this.getServer().getPluginManager().registerEvent(Event.Type.PLAYER_CHAT, pl, Event.Priority.Low, this);
+		this.getServer().getPluginManager().registerEvent(Event.Type.PLAYER_MOVE, pl, Event.Priority.Low, this);
 		this.getServer().getPluginManager().registerEvent(Event.Type.BLOCK_PLACE, bl, Event.Priority.Normal, this);
 		this.getServer().getPluginManager().registerEvent(Event.Type.BLOCK_BREAK, bl, Event.Priority.Normal, this);
 
@@ -98,15 +99,18 @@ public class Circles extends JavaPlugin
 
 					if(fchat)
 					{
+						PlayerData.setData(player, "cchat", true);
 						player.sendMessage(ChatColor.GREEN+"Circle-only chat enabled.");
 					}
 					else
 					{
+						PlayerData.setData(player, "cchat", false);
 						player.sendMessage(ChatColor.RED+"Circle-only chat disabled.");
 					}
 
 					PlayerData.setData(player, "fchat", fchat);
 				}
+				
 				else if(args[0].equals("invite"))
 				{
 					if(args.length!=2)
@@ -119,11 +123,15 @@ public class Circles extends JavaPlugin
 
 						Player target = this.getServer().getPlayer(args[1]);
 
-						if(player!=null&&circle!=null)
+						if(target!=null)
 						{
 							circle.addInvited(args[1]);
 							target.sendMessage(ChatColor.GREEN+"You have been invited to "+circle.getName());
 							player.sendMessage(ChatColor.GREEN+args[1]+" has been invited to your circle.");
+						}
+						else
+						{
+							player.sendMessage(ChatColor.RED+"Player is not online.");
 						}
 					}
 				}
@@ -138,6 +146,7 @@ public class Circles extends JavaPlugin
 						Circle circle = Circle.byPlayer(player.getName());
 
 						Player target = this.getServer().getPlayer(args[1]);
+						
 						if(player!=null)
 						{
 							circle.removeInvited(args[1]);
@@ -167,24 +176,119 @@ public class Circles extends JavaPlugin
 				}
 				else if(args[0].equals("rank"))
 				{
-					if(args.length!=4)
+					Circle circle = Circle.byPlayer(player.getName());
+					
+					if(circle!=null)
 					{
-						player.sendMessage(ChatColor.YELLOW+"Usage: /f rank [player name] [custom rank] [permissions id]");
-					}
-					else
-					{
-						Circle circle = Circle.byPlayer(player.getName());
-						if(circle!=null)
+						if(args[1].equals("set")&&args.length==4)
+						{
+							int index = Integer.parseInt(args[2]);
+							
+							if(index>0&&index<=10)
+							{
+								if(args[3].length()<=10)
+								{
+									circle.getCircleRank(index).setName(args[3]);
+									player.sendMessage("Rank "+args[2]+" has been set to "+args[3]);
+								}
+								else
+								{
+									player.sendMessage("Rank names can have a maximum of 10 characters");
+								}
+							}
+							else
+							{
+								player.sendMessage(ChatColor.RED+"Rank ids can only be 1-10.");
+							}
+						}
+						else if(args[1].equals("perms"))
+						{
+							if(args[3].equals("add")&&args.length==5)
+							{
+								CircleRank rank = circle.getCircleRank(args[2]);
+								
+								if(rank!=null)
+								{
+									CirclePermission permission = CirclePermission.fromString(args[4]);
+									
+									if(permission!=null)
+									{
+										if(!rank.hasPermission(permission))
+										{
+											rank.addPermission(permission);
+										}
+										else
+										{
+											player.sendMessage(ChatColor.RED+"Rank already has this permission.");
+										}
+									}
+									else
+									{
+										player.sendMessage(ChatColor.RED+"Permission not recognized.");
+									}
+								}
+								else
+								{
+									player.sendMessage(ChatColor.RED+"Rank does not exist.");
+								}
+							}
+							else if(args[3].equals("remove")&&args.length==5)
+							{
+								CircleRank rank = circle.getCircleRank(args[2]);
+								
+								if(rank!=null)
+								{
+									CirclePermission permission = CirclePermission.fromString(args[4]);
+									
+									if(permission!=null)
+									{
+										if(rank.hasPermission(permission))
+										{
+											rank.addPermission(permission);
+										}
+										else
+										{
+											player.sendMessage(ChatColor.RED+"Rank doesn't have this permission.");
+										}
+									}
+									else
+									{
+										player.sendMessage(ChatColor.RED+"Permission not recognized.");
+									}
+								}
+								else
+								{
+									player.sendMessage(ChatColor.RED+"Rank does not exist.");
+								}
+							}
+						}
+						else if(args.length==3)
 						{
 							if(circle.containsMember(args[1]))
 							{
-								Member m = circle.getMember(args[1]);
-								m.setRank(Integer.parseInt(args[3]));
-								m.setTitle(args[2]);
-								player.sendMessage(args[1]+" has been reranked.");
+								int id = circle.getCircleRankId(args[2]);
+								
+								if(id!=-1)
+								{
+									circle.getMember(args[1]).setRank(id);
+									player.sendMessage(ChatColor.GREEN+args[1]+" is now a "+args[2]);
+								}
+								else
+								{
+									player.sendMessage(ChatColor.RED+"Rank does not exist.");
+								}
+							}
+							else
+							{
+								player.sendMessage(ChatColor.RED+"Player is not in your Circle.");
 							}
 						}
 					}
+					else
+					{
+						player.sendMessage(ChatColor.RED+"You are not in a Circle.");
+					}
+					
 				}
 				else if(args[0].equals("name"))
 				{
@@ -282,6 +386,79 @@ public class Circles extends JavaPlugin
 					{
 						player.sendMessage(ChatColor.RED+"You are not in a circle.");
 					}
+				}
+				else if(args[0].equals("tag")&&args.length==2)
+				{
+					Circle circle = Circle.byPlayer(player.getName());
+					
+					if(circle!=null)
+					{
+						if(args[1].length()>3)
+						{
+							player.sendMessage(ChatColor.RED+"Circle tags can have a maximum of 3 characters.");
+						}
+						else
+						{
+							circle.setTag(args[1]);
+							player.sendMessage(ChatColor.GRAY+"Circle tag changed.");
+						}
+					}
+					else
+					{
+						player.sendMessage(ChatColor.RED+"You are not in a circle.");
+					}
+				}
+				else if(args[0].equals("dev")) //remove later
+				{
+					if(args[1].equals("radius")&&args.length==3)
+					{
+						Circle circle = Circle.byPlayer(player.getName());
+						
+						if(circle!=null)
+						{
+							circle.setProtectionRadius(Integer.parseInt(args[2]));
+							
+							player.sendMessage(ChatColor.GRAY+"Circle radius changed to "+args[2]+".");
+						}
+						else
+						{
+							player.sendMessage(ChatColor.RED+"You are not in a circle.");
+						}
+					}
+				}
+			}
+		}
+		else if(command.getName().equals("accept"))
+		{
+			if(args.length!=1)
+			{
+				player.sendMessage(ChatColor.YELLOW+"Usage: /accept [circle name]");
+			}
+			else
+			{
+				Circle circle = Circle.byName(args[0]);
+				if(circle!=null)
+				{
+					if(circle.isInvited(player.getName()))
+					{
+						if(Circle.byPlayer(player.getName())==null)
+						{
+							circle.addMember(player.getName());
+							player.sendMessage(ChatColor.GREEN+"You have joined "+circle.getName());
+						}
+						else
+						{
+							player.sendMessage(ChatColor.RED+"You are already in a Circle!");
+						}
+					}
+					else
+					{
+						player.sendMessage(ChatColor.RED+"You are not invited to this Circle!");
+					}
+				}
+				else
+				{
+					player.sendMessage(ChatColor.RED+"This Circle does not exist!");
 				}
 			}
 		}

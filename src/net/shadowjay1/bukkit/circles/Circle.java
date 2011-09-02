@@ -2,6 +2,9 @@ package net.shadowjay1.bukkit.circles;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.Set;
 
 public class Circle
 {
@@ -14,6 +17,7 @@ public class Circle
 	int oz;
 	HashMap<String,Member> members;
 	HashMap<String, Status> relations;
+	HashMap<Integer, CircleRank> ranks;
 	ArrayList<String> invites;
 	int bank;
 	
@@ -23,6 +27,9 @@ public class Circle
 		radius = 10;
 		members = new HashMap<String,Member>();
 		relations = new HashMap<String, Status>();
+		ranks = new HashMap<Integer, CircleRank>();
+		ranks.put(Integer.valueOf(0), new CircleRank("Leader"));
+		invites = new ArrayList<String>();
 		this.name = name;
 		bank = 0;
 		
@@ -86,7 +93,7 @@ public class Circle
 	
 	public void addInvited(String invited)
 	{
-		if(!invites.contains(invited)) invites.remove(invited);
+		if(!invites.contains(invited)) invites.add(invited);
 	}
 	
 	public void removeInvited(String invited)
@@ -167,6 +174,44 @@ public class Circle
 		{
 			return -1;
 		}
+	}
+	
+	public CircleRank getCircleRank(int i)
+	{
+		if(ranks.get(i)==null)
+		{
+			ranks.put(i, new CircleRank(""));
+		}
+		
+		return ranks.get(i);
+	}
+	
+	public CircleRank getCircleRank(String name)
+	{
+		CircleRank[] values = ranks.values().toArray(new CircleRank[ranks.size()]);
+		
+		for(int i = 0;i<values.length;i++)
+		{
+			if(values[i].getName().equalsIgnoreCase(name)) return values[i];
+		}
+		
+		return null;
+	}
+	
+	public int getCircleRankId(String name)
+	{
+		Set<Entry<Integer, CircleRank>> entries = ranks.entrySet();
+		
+		Iterator<Entry<Integer, CircleRank>> iterator = entries.iterator();
+		
+		while(iterator.hasNext())
+		{
+			Entry<Integer, CircleRank> rank = iterator.next();
+			
+			if(rank.getValue().getName().equalsIgnoreCase(name)) return rank.getKey();
+		}
+		
+		return -1;
 	}
 	
 	public static Circle byName(String name)
